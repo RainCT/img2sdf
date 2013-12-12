@@ -19,7 +19,7 @@ class UniqueId(object):
 
 class Pose(object):
 
-    def __init__(self, x, y, r):
+    def __init__(self, x, y, r=0):
         self.x = x
         self.y = y
         self.r = r

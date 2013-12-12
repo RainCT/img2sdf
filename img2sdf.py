@@ -58,12 +58,12 @@ def load_image(filename):
     im = Image.open(filename)
     return im.convert('1').point(lambda i: bool(i == 0))
 
-def process_image(filename, scale):
+def process_image(filename, scale, model_name):
     image = load_image(filename)
 
-    world = sdf.World('TheUltimateWorldGeneratedFromImage')
+    world = sdf.World(model_name)
     for (x, y, w, h) in extract_walls(image):
-        pose = sdf.Pose((x + w / 2) * scale, -(y + h / 2) * scale, 0)
+        pose = sdf.Pose((x + w / 2.0) * scale, -(y + h / 2.0) * scale, 0)
         wall = sdf.Wall(pose, length=w * scale, width=h * scale, height=3)
         world.add_wall(wall)
 
@@ -75,9 +75,11 @@ def main():
                         help='image to generate a world from.')
     parser.add_argument('scale', metavar='SCALE', type=float,
                         help='multiplier to convert from pixels to meters.')
+    parser.add_argument('--name', default='UnnamedWallsFromImage',
+                        help='name to give the model (in the XML files).')
     args = parser.parse_args()
 
-    print process_image(args.image, args.scale)
+    print process_image(args.image, args.scale, args.name)
 
 if __name__ == '__main__':
     main()
