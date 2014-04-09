@@ -31,14 +31,15 @@ class UniqueId(object):
 
 class Pose(object):
 
-    def __init__(self, x, y, r=0):
+    def __init__(self, x, y, z=0, r=0):
         self.x = x
         self.y = y
+        self.z = z
         self.r = r
 
     def xml(self):
         node = xml.Element('pose')
-        node.text = '%.5f %.5f 0 0 0 %.5f' % (self.x, self.y, self.r)
+        node.text = '%.5f %.5f %.5f 0 0 %.5f' % (self.x, self.y, self.z, self.r)
         return node
 
 class Size(object):
@@ -112,7 +113,7 @@ class World(object):
     def __init__(self, model_name):
         self.model_name = model_name
         self.walls = []
-   
+
     def add_wall(self, wall):
         self.walls.append(wall)
 
@@ -137,5 +138,5 @@ def to_string(inst, pretty_print=True):
 
 if __name__ == '__main__':
     world = World('ExampleWorld')
-    world.add_wall(Wall(Pose(0, 0, 0), 5, 1, 2.5))
+    world.add_wall(Wall(Pose(0, 0, 0, 0), 5, 1, 2.5))
     print to_string(world)
