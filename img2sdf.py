@@ -20,7 +20,6 @@
 # CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 import Image
-import ImageOps
 import argparse
 
 import sdf
@@ -70,13 +69,13 @@ def load_image(filename):
     im = Image.open(filename)
     return im.convert('1').point(lambda i: bool(i == 0))
 
-def process_image(filename, scale, model_name):
+def process_image(filename, scale, height, model_name):
     image = load_image(filename)
 
     world = sdf.World(model_name)
     for (x, y, w, h) in extract_walls(image):
-        pose = sdf.Pose((x + w / 2.0) * scale, -(y + h / 2.0) * scale, 0)
-        wall = sdf.Wall(pose, length=w * scale, width=h * scale, height=3)
+        pose = sdf.Pose((x + w / 2.0) * scale, -(y + h / 2.0) * scale, height / 2.0, 0.0)
+        wall = sdf.Wall(pose, length=w * scale, width=h * scale, height=height)
         world.add_wall(wall)
 
     return sdf.to_string(world)
@@ -87,11 +86,13 @@ def main():
                         help='image to generate a world from.')
     parser.add_argument('scale', metavar='SCALE', type=float,
                         help='multiplier to convert from pixels to meters.')
+    parser.add_argument('--height', default=1.0, type=float,
+                        help='wall height.')
     parser.add_argument('--name', default='UnnamedWallsFromImage',
                         help='name to give the model (in the XML files).')
     args = parser.parse_args()
 
-    print process_image(args.image, args.scale, args.name)
+    print process_image(args.image, args.scale, args.height, args.name)
 
 if __name__ == '__main__':
     main()
