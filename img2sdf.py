@@ -5,7 +5,9 @@
 # with walls from it.
 #
 # Copyright (c) 2013 PAL Robotics SL.
-# By Siegfried Gevatter <siegfried.gevatter@pal-robotics.com>
+#               By Siegfried Gevatter <siegfried.gevatter@pal-robotics.com>
+#               Contributors: Enrique Fernández
+#           (c) 2014 Siegfried-A. Gevatter <siegfried@gevatter.omc>
 #
 # Permission to use, copy, modify, and/or distribute this software for
 # any purpose with or without fee is hereby granted, provided that the
@@ -21,49 +23,64 @@
 
 import Image
 import argparse
+import numpy
 
 import sdf
 
-def expand(data, size, sx, sy, clear_data=True):
+def expand(horizontal, size, sx, sy):
+    """
+    Greedily looks for a solid rectangle starting at the given position.
+
+    Args:
+      horizontal: 2-d array, each cell indicates how many adjacent cells
+                  towards the right are true (counting the cell itself).
+      size:       (w, h)-tuple indicating the size of the image (and arrays).
+      sx, sy:     cell to evaluate.
+
+    Returns:
+      A (width, height)-tuple for the rectangle starting at the given
+      position, or None.
+    """
+
     (w, h) = size
 
-    width = 0
-    (x, y) = (sx, sy)
-    while x < w-1 and data[x,y]:
-        width += 1
-        x += 1
+    width = horizontal[sy, sx]
+    if not width:
+        return None
 
     height = 1
-    (x, y) = (sx, sy + 1)
-    while y < h-1:
-        ok = True
-        for x in range(sx, sx + width):
-            if not data[x,y]:
-                ok = False
-                break
-        if ok:
+    for y in range(sy + 1, h):
+        if horizontal[y, sx] >= width:
             height += 1
-            y += 1
         else:
             break
 
-    if clear_data:
-        for x in range(sx, sx + width):
-            for y in range(sy, sy + height):
-                data[x, y] = 0
-
-    if width:
-        return (width, height)
-    return None
+    return (width, height)
 
 def extract_walls(image):
     (w, h) = image.size
-    pix = image.load()
+
+    # Note: we convert to 'L' because of a bug in PIL/numpy with image mode '1'.
+    # An alternative workaround would be:
+    #   horizontal = numpy.reshape(image.getdata(), (h, w)).astype(dtype=int, copy=False)
+    horizontal = numpy.array(image.convert('L'), dtype=int)
     for y in range(h):
-        for x in range(w):
-            r = expand(pix, image.size, x, y)
+        horizontal[y, w - 1] = bool(horizontal[y, w - 1])
+        for x in range(w - 2, -1, -1):
+            horizontal[y, x] = horizontal[y, x + 1] + 1 if horizontal[y, x] else 0
+
+    for y in range(h):
+        x = 0
+        while x < w:
+            r = expand(horizontal, image.size, x, y)
             if r:
                 yield [x, y, r[0], r[1]]
+                x += r[0]
+
+                # Mark the region in the array, so it won't be selected again.
+                horizontal[y : y + r[1], x : x + r[0]] = 0
+            else:
+                x += 1
 
 def load_image(filename):
     im = Image.open(filename)
